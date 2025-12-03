@@ -23,11 +23,22 @@ public class JwtUtil {
 
     @PostConstruct
     public void initializeSecretKey() {
-        byte[] keyBytes = secretKeyString.getBytes();
-        if (keyBytes.length < 32) {
-            throw new IllegalArgumentException("JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm!!");
+        try {
+            byte[] keyBytes = secretKeyString.getBytes();
+            byte[] finalKeyBytes = new byte[32];
+            if (keyBytes.length >= 32) {
+                System.arraycopy(keyBytes, 0, finalKeyBytes, 0, 32);
+            } else {
+                System.arraycopy(keyBytes, 0, finalKeyBytes, 0, keyBytes.length);
+                for (int i = keyBytes.length; i < 32; i++) {
+                    finalKeyBytes[i] = keyBytes[i % keyBytes.length];
+                }
+            }
+            this.secretKey = Keys.hmacShaKeyFor(finalKeyBytes);
+        } catch (Exception e) {
+            System.err.println("Failed to initialize JWT secret key: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize JWT secret key", e);
         }
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
 
     public boolean validateToken(String token) {
