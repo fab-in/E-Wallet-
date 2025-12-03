@@ -133,7 +133,7 @@ public class UserService {
             throw new ValidationException("Invalid email or password");
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
 
         UserDTO userDTO = convertToDTO(user);
 
@@ -155,7 +155,7 @@ public class UserService {
         User user = userRepo.findById(userDTO.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found after creation"));
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
 
         AuthResponseDTO response = new AuthResponseDTO();
         response.setToken(token);

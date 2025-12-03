@@ -55,9 +55,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         try {
             String email = jwtUtil.getEmailFromToken(token);
             String userId = jwtUtil.getUserIdFromToken(token);
+            String role = jwtUtil.getRoleFromToken(token);
+            
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Email", email)
                     .header("X-User-Id", userId)
+                    .header("X-User-Role", role != null ? role : "USER")
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());

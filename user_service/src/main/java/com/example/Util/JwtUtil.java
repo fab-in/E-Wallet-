@@ -54,13 +54,14 @@ public class JwtUtil {
         }
     }
 
-    public String generateToken(UUID userId, String email) {
+    public String generateToken(UUID userId, String email, String role) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
 
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId.toString())
+                .claim("role", role != null ? role : "USER")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
@@ -114,6 +115,15 @@ public class JwtUtil {
                 .getPayload();
         String userIdString = claims.get("userId", String.class);
         return UUID.fromString(userIdString);
+    }
+
+    public String getRoleFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+        return claims.get("role", String.class);
     }
 
     public boolean isTokenExpired(String token) {
