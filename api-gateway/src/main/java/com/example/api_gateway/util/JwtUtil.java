@@ -25,7 +25,7 @@ public class JwtUtil {
     public void initializeSecretKey() {
         byte[] keyBytes = secretKeyString.getBytes();
         if (keyBytes.length < 32) {
-            throw new IllegalArgumentException("JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm");
+            throw new IllegalArgumentException("JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm!!");
         }
         this.secretKey = Keys.hmacShaKeyFor(keyBytes);
     }
