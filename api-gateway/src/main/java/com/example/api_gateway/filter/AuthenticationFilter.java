@@ -23,7 +23,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Value("${gateway.auth.excluded-paths:/api/auth/signup,/api/auth/login,/actuator}")
+    @Value("${gateway.auth.excluded-paths:/auth/signup,/auth/login,/actuator}")
     private String excludedPathsString;
 
     private List<String> excludedPaths;
