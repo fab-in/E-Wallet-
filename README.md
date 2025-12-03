@@ -391,13 +391,16 @@ Content-Type: application/json
 
 ### Credit/Withdraw/Transfer Flow
 
+<details>
+<summary><b>View Sequence Diagram</b></summary>
+
 ```mermaid
 sequenceDiagram
     participant User
-    participant Gateway
-    participant WalletService
+    participant Gateway as API Gateway
+    participant WalletService as Wallet Service
     participant RabbitMQ
-    participant TransactionService
+    participant TransactionService as Transaction Service
     participant Email
 
     User->>Gateway: Initiate Transaction
@@ -418,6 +421,25 @@ sequenceDiagram
     RabbitMQ->>TransactionService: Consume Event
     TransactionService->>TransactionService: Update Status (SUCCESS/FAILED)
 ```
+
+</details>
+
+**Step-by-Step Flow:**
+
+1. **User initiates transaction** via API Gateway (`/wallets/credit`, `/wallets/withdraw`, or `/wallets/transfer`)
+2. **API Gateway** forwards the request to **Wallet Service**
+3. **Wallet Service** validates the request (wallet exists, passcode correct, sufficient balance for withdraw/transfer)
+4. **Wallet Service** generates a transaction ID and publishes `TransactionCreatedEvent` to RabbitMQ queue `transaction.created`
+5. **Transaction Service** consumes the event, creates a transaction record with status `PENDING`, generates a 6-digit OTP, and sends it via email
+6. **User receives OTP** in their email
+7. **User verifies OTP** by calling `/transactions/verify-otp` endpoint through API Gateway
+8. **Transaction Service** validates the OTP and publishes `OtpVerifiedEvent` to RabbitMQ queue `otp.verified`
+9. **Wallet Service** consumes the event and updates wallet balance(s) based on transaction type:
+   - **CREDIT**: `wallet.balance += amount`
+   - **WITHDRAW**: `wallet.balance -= amount`
+   - **TRANSFER**: `sender.balance -= amount` and `receiver.balance += amount`
+10. **Wallet Service** publishes `TransactionCompletedEvent` to RabbitMQ queue `transaction.completed`
+11. **Transaction Service** consumes the event and updates transaction status to `SUCCESS` or `FAILED`
 
 ### Transaction Types
 
