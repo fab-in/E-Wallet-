@@ -47,34 +47,34 @@ public class TransactionService {
     public PaginatedResponse<TransactionDTO> getTransactions(String type, Pageable pageable) {
         Pageable validatedPageable = validateAndAdjustPageable(pageable);
 
-        String normalizedType = (type == null || type.trim().isEmpty()) 
-            ? "all" 
-            : type.trim().toLowerCase();
-        
+        String normalizedType = (type == null || type.trim().isEmpty())
+                ? "all"
+                : type.trim().toLowerCase();
+
         Page<Transaction> transactionPage;
         switch (normalizedType) {
             case "credits":
                 transactionPage = filterTransactionsByRemarkContains("credit transaction", validatedPageable);
                 break;
-                
+
             case "withdrawals":
                 transactionPage = filterTransactionsByRemarkContains("withdrawal transaction", validatedPageable);
                 break;
-                
+
             case "transfers":
                 transactionPage = filterTransactionsByRemarkContains("transfer", validatedPageable);
                 break;
-                
+
             case "failed":
                 transactionPage = filterFailedTransactions(validatedPageable);
                 break;
-                
+
             case "all":
             default:
                 transactionPage = fetchTransactionsForCurrentUser(validatedPageable);
                 break;
         }
-        
+
         return convertToPaginatedResponse(transactionPage);
     }
 
@@ -93,7 +93,7 @@ public class TransactionService {
             return transactionRepo.findByWalletIdsAndRemarkContaining(walletIds, remark, pageable);
         }
     }
-    
+
     private Page<Transaction> filterFailedTransactions(Pageable pageable) {
         UUID currentUserId = securityUtil.getCurrentUserId();
 
@@ -120,7 +120,7 @@ public class TransactionService {
         if (securityUtil.isAdmin()) {
             return transactionRepo.findAll(pageable);
         }
-        
+
         // Get wallet IDs for the user
         List<UUID> walletIds = getWalletIdsForUser(currentUserId);
         return transactionRepo.findByWalletIds(walletIds, pageable);
@@ -188,28 +188,21 @@ public class TransactionService {
             throw new ValidationException("User not authenticated");
         }
 
-        // Fetch user details from User Service
         UserServiceClient.UserDTO user = userServiceClient.getUserDetails(currentUserId);
         if (user == null) {
             throw new ValidationException("User not found");
         }
-
-        // Fetch wallet IDs for the user
         List<UUID> walletIds = getWalletIdsForUser(currentUserId);
-        
-        // Fetch transactions
+
         List<Transaction> transactions = transactionRepo.findAllByWalletIds(walletIds);
-        
-        // Fetch wallet details from Wallet Service
+
         List<WalletServiceClient.WalletDTO> wallets = walletServiceClient.getUserWallets(currentUserId);
 
-        // Build CSV statement using DTOs
         byte[] csvBytes = statementCsvBuilder.buildStatementCsv(user, transactions, wallets);
 
         emailService.sendStatementEmail(
                 user.getEmail(),
                 user.getName(),
-                csvBytes
-        );
+                csvBytes);
     }
 }

@@ -49,7 +49,6 @@ public class TransactionEventConsumer {
 
             transactionRepo.save(transaction);
 
-            // Generate and send OTP
             String userEmail = event.getUserEmail();
             if (userEmail == null || userEmail.trim().isEmpty()) {
                 userEmail = "user@example.com"; // Fallback
