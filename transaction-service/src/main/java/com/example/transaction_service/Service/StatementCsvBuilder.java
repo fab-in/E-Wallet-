@@ -18,18 +18,16 @@ public class StatementCsvBuilder {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public byte[] buildStatementCsv(UserServiceClient.UserDTO user, 
-                                     List<Transaction> transactions, 
-                                     List<WalletServiceClient.WalletDTO> userWallets) {
+    public byte[] buildStatementCsv(UserServiceClient.UserDTO user,
+            List<Transaction> transactions,
+            List<WalletServiceClient.WalletDTO> userWallets) {
         StringBuilder csv = new StringBuilder();
 
         csv.append("Account Holder,").append(escapeCsvField(user != null ? user.getName() : "")).append("\n");
         csv.append("Account Details,").append(escapeCsvField(buildAccountDetails(userWallets))).append("\n\n");
 
-        // CSV Header
         csv.append("Transaction ID,Date,Amount,Status,Remarks,Sender Wallet ID,Receiver Wallet ID\n");
 
-        // Sort transactions by date descending
         List<Transaction> sortedTransactions = new ArrayList<>(transactions);
         sortedTransactions.sort(Comparator.comparing(Transaction::getTransactionDate));
         for (int i = sortedTransactions.size() - 1; i >= 0; i--) {
