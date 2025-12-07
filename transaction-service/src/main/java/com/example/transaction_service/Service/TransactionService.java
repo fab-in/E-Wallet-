@@ -185,7 +185,7 @@ public class TransactionService {
         UUID currentUserId = securityUtil.getCurrentUserId();
 
         if (currentUserId == null) {
-            throw new ValidationException("User not authenticated");
+            throw new ValidationException("User not authenticated!");
         }
 
         UserServiceClient.UserDTO user = userServiceClient.getUserDetails(currentUserId);
