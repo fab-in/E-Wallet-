@@ -68,10 +68,9 @@ public class JwtUtil {
                 .compact();
     }
 
-
     public boolean validateToken(String token) {
         try {
-            
+
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
@@ -83,13 +82,15 @@ public class JwtUtil {
         } catch (MalformedJwtException e) {
             logger.warn("Invalid JWT token format: {}", e.getMessage());
             return false;
-        } catch (UnsupportedJwtException e) {
-            logger.warn("Unsupported JWT token: {}", e.getMessage());
-            return false;
-        } catch (SignatureException e) {
-            logger.warn("Invalid JWT signature: {}", e.getMessage());
-            return false;
-        } catch (IllegalArgumentException e) {
+        }
+        // catch (UnsupportedJwtException e) {
+        // logger.warn("Unsupported JWT token: {}", e.getMessage());
+        // return false;
+        // } catch (SignatureException e) {
+        // logger.warn("Invalid JWT signature: {}", e.getMessage());
+        // return false;
+        // }
+        catch (IllegalArgumentException e) {
             logger.warn("JWT token is null or empty: {}", e.getMessage());
             return false;
         } catch (Exception e) {
@@ -135,7 +136,7 @@ public class JwtUtil {
                     .getPayload();
             return claims.getExpiration().before(new Date());
         } catch (Exception e) {
-            return true; 
+            return true;
         }
     }
 

@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -16,6 +17,8 @@ import java.util.Date;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("JwtUtil Unit Tests")
@@ -290,6 +293,27 @@ class JwtUtilTest {
     }
 
     @Test
+    @DisplayName("Should handle exception in initializeSecretKey and throw RuntimeException")
+    void testInitializeSecretKey_ExceptionHandling() {
+        JwtUtil badKeyUtil = new JwtUtil();
+        String testKey = "TestKey";
+        ReflectionTestUtils.setField(badKeyUtil, "secretKeyString", testKey);
+        
+        try (MockedStatic<Keys> keysMock = mockStatic(Keys.class)) {
+            keysMock.when(() -> Keys.hmacShaKeyFor(any(byte[].class)))
+                    .thenThrow(new RuntimeException("Key generation failed"));
+            
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+                badKeyUtil.initializeSecretKey();
+            });
+            
+            assertEquals("Failed to initialize JWT secret key", exception.getMessage());
+            assertNotNull(exception.getCause());
+            assertEquals("Key generation failed", exception.getCause().getMessage());
+        }
+    }
+
+    @Test
     @DisplayName("Should handle exception in getEmailFromToken")
     void testGetEmailFromToken_Exception() {
         String invalidToken = "invalid.token.here";
@@ -343,16 +367,6 @@ class JwtUtilTest {
         });
     }
 
-    @Test
-    @DisplayName("Should handle exception in initializeSecretKey and throw RuntimeException")
-    void testInitializeSecretKey_ExceptionHandling() {
-        JwtUtil longKeyUtil = new JwtUtil();
-        String longKey = "ThisIsAVeryLongKeyThatIsDefinitelyMoreThan32BytesLongForTestingPurposes";
-        ReflectionTestUtils.setField(longKeyUtil, "secretKeyString", longKey);
-        
-        assertDoesNotThrow(() -> longKeyUtil.initializeSecretKey());
-        assertNotNull(ReflectionTestUtils.getField(longKeyUtil, "secretKey"));
-    }
 
     @Test
     @DisplayName("Should test key padding loop when key length < 32")
