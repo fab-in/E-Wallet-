@@ -137,6 +137,87 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    @Test
+    @DisplayName("Skips authentication when already authenticated")
+    void doFilter_AlreadyAuthenticated() throws ServletException, IOException {
+        String token = "valid.token";
+        User user = buildUser("USER");
+        org.springframework.security.core.Authentication existingAuth = 
+            mock(org.springframework.security.core.Authentication.class);
+        SecurityContextHolder.getContext().setAuthentication(existingAuth);
+        
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtUtil.getEmailFromToken(token)).thenReturn(user.getEmail());
+        // validateToken is not called when already authenticated, so no stub needed
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertEquals(existingAuth, SecurityContextHolder.getContext().getAuthentication());
+        verify(userRepo, never()).findByEmail(anyString());
+        verify(jwtUtil, never()).validateToken(anyString());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Handles user with null role")
+    void doFilter_UserWithNullRole() throws ServletException, IOException {
+        String token = "valid.token";
+        User user = buildUser(null);
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtUtil.getEmailFromToken(token)).thenReturn(user.getEmail());
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+        assertEquals(user, SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        assertTrue(SecurityContextHolder.getContext().getAuthentication().getAuthorities().isEmpty());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Handles Bearer token with whitespace")
+    void doFilter_BearerTokenWithWhitespace() throws ServletException, IOException {
+        String token = "valid.token";
+        User user = buildUser("USER");
+        when(request.getHeader("Authorization")).thenReturn("Bearer   " + token + "   ");
+        when(jwtUtil.getEmailFromToken(token)).thenReturn(user.getEmail());
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(userRepo.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNotNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Logs debug when token is null")
+    void doFilter_TokenNullLogsDebug() throws ServletException, IOException {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Logs warning when email extraction fails")
+    void doFilter_EmailNullLogsWarning() throws ServletException, IOException {
+        String token = "valid.token";
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+        when(jwtUtil.getEmailFromToken(token)).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/test");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        assertNull(SecurityContextHolder.getContext().getAuthentication());
+        verify(filterChain).doFilter(request, response);
+    }
+
     private User buildUser(String role) {
         User user = new User();
         user.setId(UUID.randomUUID());

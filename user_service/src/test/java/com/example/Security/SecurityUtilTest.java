@@ -144,6 +144,86 @@ class SecurityUtilTest {
         assertFalse(securityUtil.hasRole("admin"));
     }
 
+    @Test
+    @DisplayName("Returns null when principal is neither User nor String")
+    void getCurrentUser_PrincipalOtherType() {
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(12345); // Integer, not User or String
+        SecurityContextHolder.setContext(securityContext);
+
+        assertNull(securityUtil.getCurrentUser());
+    }
+
+    @Test
+    @DisplayName("Returns null when authentication is null")
+    void getCurrentUser_AuthenticationNull() {
+        when(securityContext.getAuthentication()).thenReturn(null);
+        SecurityContextHolder.setContext(securityContext);
+
+        assertNull(securityUtil.getCurrentUser());
+    }
+
+    @Test
+    @DisplayName("isAdmin returns false when user is null")
+    void isAdmin_NoUser() {
+        assertFalse(securityUtil.isAdmin());
+    }
+
+    @Test
+    @DisplayName("isAdmin returns false when user role is not ADMIN")
+    void isAdmin_NotAdmin() {
+        User user = buildUser("USER");
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(user);
+        SecurityContextHolder.setContext(securityContext);
+
+        assertFalse(securityUtil.isAdmin());
+    }
+
+    @Test
+    @DisplayName("isAdmin returns false when user role is null")
+    void isAdmin_NullRole() {
+        User user = buildUser(null);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(user);
+        SecurityContextHolder.setContext(securityContext);
+
+        assertFalse(securityUtil.isAdmin());
+    }
+
+    @Test
+    @DisplayName("hasRole returns false when role parameter is null")
+    void hasRole_NullRoleParameter() {
+        User user = buildUser("USER");
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(user);
+        SecurityContextHolder.setContext(securityContext);
+
+        assertFalse(securityUtil.hasRole(null));
+    }
+
+    @Test
+    @DisplayName("hasRole returns false when user is null")
+    void hasRole_NoUser() {
+        assertFalse(securityUtil.hasRole("USER"));
+    }
+
+    @Test
+    @DisplayName("hasRole returns false when user role is null")
+    void hasRole_UserRoleNull() {
+        User user = buildUser(null);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getPrincipal()).thenReturn(user);
+        SecurityContextHolder.setContext(securityContext);
+
+        assertFalse(securityUtil.hasRole("USER"));
+    }
+
     private User buildUser(String role) {
         User user = new User();
         user.setId(UUID.randomUUID());
