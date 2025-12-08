@@ -541,6 +541,118 @@ class UserServiceTest {
         verify(userRepo, never()).save(any(User.class));
     }
 
+    @Test
+    @DisplayName("Should update user without changing password when password is null")
+    void testUpdateUser_PasswordNull() {
+        UserCreateDTO updateDTO = new UserCreateDTO();
+        updateDTO.setName("Updated Name");
+        updateDTO.setPassword(null);
+
+        when(userRepo.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepo.save(any(User.class))).thenReturn(testUser);
+
+        userService.updateUser(testUserId, updateDTO);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepo).save(userCaptor.capture());
+        User updatedUser = userCaptor.getValue();
+        assertEquals("Updated Name", updatedUser.getName());
+        assertEquals(testUser.getPassword(), updatedUser.getPassword());
+    }
+
+    @Test
+    @DisplayName("Should update only phone number when other fields are null")
+    void testUpdateUser_OnlyPhoneNumber() {
+        UserCreateDTO updateDTO = new UserCreateDTO();
+        updateDTO.setPhoneNumber("9999999999");
+
+        when(userRepo.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepo.save(any(User.class))).thenReturn(testUser);
+
+        userService.updateUser(testUserId, updateDTO);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepo).save(userCaptor.capture());
+        User updatedUser = userCaptor.getValue();
+        assertEquals("9999999999", updatedUser.getPhoneNumber());
+        assertEquals(testUser.getName(), updatedUser.getName());
+        assertEquals(testUser.getEmail(), updatedUser.getEmail());
+    }
+
+    @Test
+    @DisplayName("Should update only role when other fields are null")
+    void testUpdateUser_OnlyRole() {
+        UserCreateDTO updateDTO = new UserCreateDTO();
+        updateDTO.setRole("ADMIN");
+
+        when(userRepo.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(userRepo.save(any(User.class))).thenReturn(testUser);
+
+        userService.updateUser(testUserId, updateDTO);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepo).save(userCaptor.capture());
+        User updatedUser = userCaptor.getValue();
+        assertEquals("ADMIN", updatedUser.getRole());
+        assertEquals(testUser.getName(), updatedUser.getName());
+    }
+
+    @Test
+    @DisplayName("Should convert User entity to DTO correctly")
+    void testConvertToDTO_AllFields() {
+        User user = new User();
+        user.setId(testUserId);
+        user.setName("Test User");
+        user.setEmail("test@example.com");
+        user.setPhoneNumber("1234567890");
+        user.setRole("ADMIN");
+
+        when(userRepo.findById(testUserId)).thenReturn(Optional.of(user));
+
+        UserDTO dto = userService.getUserById(testUserId);
+
+        assertEquals(user.getId(), dto.getId());
+        assertEquals(user.getName(), dto.getName());
+        assertEquals(user.getEmail(), dto.getEmail());
+        assertEquals(user.getPhoneNumber(), dto.getPhoneNumber());
+        assertEquals(user.getRole(), dto.getRole());
+    }
+
+    @Test
+    @DisplayName("Should handle login with ADMIN role")
+    void testLogin_AdminRole() {
+        testUser.setRole("ADMIN");
+        when(userRepo.findByEmail(testLoginRequestDTO.getEmail())).thenReturn(Optional.of(testUser));
+        when(jwtUtil.generateToken(testUserId, testUser.getEmail(), "ADMIN")).thenReturn(testToken);
+        when(jwtUtil.getExpirationDateFromToken(testToken)).thenReturn(testExpirationDate);
+        when(jwtUtil.getIssuedAtDateFromToken(testToken)).thenReturn(testIssuedAtDate);
+
+        AuthResponseDTO result = userService.login(testLoginRequestDTO);
+
+        assertNotNull(result);
+        assertEquals("ADMIN", result.getUser().getRole());
+        verify(jwtUtil, times(1)).generateToken(testUserId, testUser.getEmail(), "ADMIN");
+    }
+
+    @Test
+    @DisplayName("Should handle signup with ADMIN role")
+    void testSignup_AdminRole() {
+        testUserCreateDTO.setRole("ADMIN");
+        testUser.setRole("ADMIN");
+        when(userRepo.existsByEmail(testUserCreateDTO.getEmail())).thenReturn(false);
+        when(userRepo.save(any(User.class))).thenReturn(testUser);
+        when(userRepo.findById(testUserId)).thenReturn(Optional.of(testUser));
+        when(jwtUtil.generateToken(testUserId, testUser.getEmail(), "ADMIN")).thenReturn(testToken);
+        when(jwtUtil.getExpirationDateFromToken(testToken)).thenReturn(testExpirationDate);
+        when(jwtUtil.getIssuedAtDateFromToken(testToken)).thenReturn(testIssuedAtDate);
+
+        AuthResponseDTO result = userService.signup(testUserCreateDTO);
+
+        assertNotNull(result);
+        assertEquals("ADMIN", result.getUser().getRole());
+        verify(jwtUtil, times(1)).generateToken(testUserId, testUser.getEmail(), "ADMIN");
+    }
+
     private User createAnotherUser() {
         User user = new User();
         user.setId(UUID.randomUUID());
