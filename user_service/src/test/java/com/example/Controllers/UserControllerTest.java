@@ -7,14 +7,21 @@ import com.example.DTO.UserDTO;
 import com.example.Exceptions.DuplicateResourceException;
 import com.example.Exceptions.ResourceNotFoundException;
 import com.example.Exceptions.ValidationException;
+import com.example.Repository.UserRepo;
 import com.example.Service.UserService;
+import com.example.Security.JwtAuthenticationFilter;
+import com.example.Util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,14 +33,28 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
+@ImportAutoConfiguration(exclude = {
+        SecurityAutoConfiguration.class,
+        SecurityFilterAutoConfiguration.class
+})
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("UserController REST API Tests")
 class UserControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
+    @MockitoBean
+    private UserRepo userRepo;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -122,7 +143,7 @@ class UserControllerTest {
     @Test
     @DisplayName("POST /users - Should create user successfully")
     void testCreateUser_Success() throws Exception {
-        doNothing().when(userService).createUser(any(UserCreateDTO.class));
+        when(userService.createUser(any(UserCreateDTO.class))).thenReturn(testUserDTO);
 
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,7 +185,7 @@ class UserControllerTest {
     @Test
     @DisplayName("PUT /users/{id} - Should update user successfully")
     void testUpdateUser_Success() throws Exception {
-        doNothing().when(userService).updateUser(eq(testUserId), any(UserCreateDTO.class));
+        when(userService.updateUser(eq(testUserId), any(UserCreateDTO.class))).thenReturn(testUserDTO);
 
         mockMvc.perform(put("/users/{id}", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
