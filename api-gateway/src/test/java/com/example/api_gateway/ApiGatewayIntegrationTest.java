@@ -35,12 +35,9 @@ class ApiGatewayIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Create a valid token using the actual JwtUtil
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + 3600000); // 1 hour from now
+        Date expiry = new Date(now.getTime() + 3600000); // 1 hour
         
-        // We need to create tokens manually since we can't easily inject the secret key
-        // For integration tests, we'll test with actual JWT validation
         SecretKey testSecretKey = Keys.hmacShaKeyFor(
                 "MySecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS256Algorithm".getBytes()
         );
@@ -54,7 +51,6 @@ class ApiGatewayIntegrationTest {
                 .signWith(testSecretKey)
                 .compact();
 
-        // Create an expired token
         Date pastDate = new Date(now.getTime() - 3600000);
         expiredToken = Jwts.builder()
                 .subject(email)
@@ -71,7 +67,7 @@ class ApiGatewayIntegrationTest {
         webTestClient.get()
                 .uri("/actuator/health")
                 .exchange()
-                .expectStatus().isOk(); // Actuator endpoints should work
+                .expectStatus().isOk(); 
     }
 
     @Test
