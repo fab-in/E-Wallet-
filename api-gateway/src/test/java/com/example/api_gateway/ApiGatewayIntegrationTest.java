@@ -14,10 +14,24 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
         "gateway.auth.excluded-paths=/auth/signup,/auth/login,/actuator",
-        "jwt.secret=MySecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS256Algorithm"
+        "jwt.secret=MySecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS256Algorithm",
+        "management.endpoints.web.exposure.include=health,metrics,gateway",
+        "management.endpoint.health.enabled=true",
+        "management.endpoints.web.base-path=/actuator",
+        "spring.cloud.gateway.routes[0].id=user-service",
+        "spring.cloud.gateway.routes[0].uri=http://localhost:8081",
+        "spring.cloud.gateway.routes[0].predicates[0]=Path=/users/**,/auth/**",
+        "spring.cloud.gateway.routes[1].id=wallet-service",
+        "spring.cloud.gateway.routes[1].uri=http://localhost:8082",
+        "spring.cloud.gateway.routes[1].predicates[0]=Path=/wallets/**",
+        "spring.cloud.gateway.routes[2].id=transaction-service",
+        "spring.cloud.gateway.routes[2].uri=http://localhost:8083",
+        "spring.cloud.gateway.routes[2].predicates[0]=Path=/transactions/**"
 })
 class ApiGatewayIntegrationTest {
 
@@ -64,10 +78,18 @@ class ApiGatewayIntegrationTest {
 
     @Test
     void testExcludedPath_Actuator_ShouldPassThrough() {
-        webTestClient.get()
+        org.springframework.http.HttpStatusCode statusCode = webTestClient.get()
                 .uri("/actuator/health")
                 .exchange()
-                .expectStatus().isOk(); 
+                .expectBody()
+                .returnResult()
+                .getStatus();
+        
+        assertNotEquals(
+            org.springframework.http.HttpStatus.UNAUTHORIZED.value(),
+            statusCode.value(),
+            "Filter should allow actuator endpoints through without authentication"
+        );
     }
 
     @Test

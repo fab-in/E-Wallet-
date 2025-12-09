@@ -21,6 +21,7 @@ import reactor.test.StepVerifier;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationFilterTest {
@@ -162,6 +163,8 @@ class AuthenticationFilterTest {
         when(jwtUtil.getRoleFromToken(token)).thenReturn(role);
         when(filterChain.filter(any(ServerWebExchange.class))).thenReturn(Mono.empty());
 
+        ArgumentCaptor<ServerWebExchange> exchangeCaptor = ArgumentCaptor.forClass(ServerWebExchange.class);
+
         Mono<Void> result = authenticationFilter.filter(exchange, filterChain);
 
         StepVerifier.create(result)
@@ -171,9 +174,9 @@ class AuthenticationFilterTest {
         verify(jwtUtil, times(1)).getEmailFromToken(token);
         verify(jwtUtil, times(1)).getUserIdFromToken(token);
         verify(jwtUtil, times(1)).getRoleFromToken(token);
-        verify(filterChain, times(1)).filter(any(ServerWebExchange.class));
+        verify(filterChain, times(1)).filter(exchangeCaptor.capture());
 
-        ServerHttpRequest modifiedRequest = exchange.getRequest();
+        ServerHttpRequest modifiedRequest = exchangeCaptor.getValue().getRequest();
         assertEquals(email, modifiedRequest.getHeaders().getFirst("X-User-Email"));
         assertEquals(userId, modifiedRequest.getHeaders().getFirst("X-User-Id"));
         assertEquals(role, modifiedRequest.getHeaders().getFirst("X-User-Role"));
@@ -196,16 +199,20 @@ class AuthenticationFilterTest {
         when(jwtUtil.getRoleFromToken(token)).thenReturn(null);
         when(filterChain.filter(any(ServerWebExchange.class))).thenReturn(Mono.empty());
 
+        ArgumentCaptor<ServerWebExchange> exchangeCaptor = ArgumentCaptor.forClass(ServerWebExchange.class);
+
         Mono<Void> result = authenticationFilter.filter(exchange, filterChain);
 
         StepVerifier.create(result)
                 .verifyComplete();
 
         verify(jwtUtil, times(1)).validateToken(token);
-        verify(filterChain, times(1)).filter(any(ServerWebExchange.class));
+        verify(filterChain, times(1)).filter(exchangeCaptor.capture());
 
-        ServerHttpRequest modifiedRequest = exchange.getRequest();
+        ServerHttpRequest modifiedRequest = exchangeCaptor.getValue().getRequest();
         assertEquals("USER", modifiedRequest.getHeaders().getFirst("X-User-Role"));
+        assertEquals(email, modifiedRequest.getHeaders().getFirst("X-User-Email"));
+        assertEquals(userId, modifiedRequest.getHeaders().getFirst("X-User-Id"));
     }
 
     @Test
@@ -226,13 +233,19 @@ class AuthenticationFilterTest {
         when(jwtUtil.getRoleFromToken(token)).thenReturn(role);
         when(filterChain.filter(any(ServerWebExchange.class))).thenReturn(Mono.empty());
 
+        ArgumentCaptor<ServerWebExchange> exchangeCaptor = ArgumentCaptor.forClass(ServerWebExchange.class);
+
         Mono<Void> result = authenticationFilter.filter(exchange, filterChain);
 
         StepVerifier.create(result)
                 .verifyComplete();
 
-        ServerHttpRequest modifiedRequest = exchange.getRequest();
+        verify(filterChain, times(1)).filter(exchangeCaptor.capture());
+
+        ServerHttpRequest modifiedRequest = exchangeCaptor.getValue().getRequest();
         assertEquals(role, modifiedRequest.getHeaders().getFirst("X-User-Role"));
+        assertEquals(email, modifiedRequest.getHeaders().getFirst("X-User-Email"));
+        assertEquals(userId, modifiedRequest.getHeaders().getFirst("X-User-Id"));
     }
 
     @Test
