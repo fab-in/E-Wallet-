@@ -52,34 +52,34 @@ public class OpenApiConfig {
                                                                                 .format("email"))));
         }
 
-        /**
-         * Operation customizer to add custom headers to all endpoints
-         */
-        @Bean
-        public OperationCustomizer operationCustomizer() {
-                return (operation, handlerMethod) -> {
-                        // Add X-User-Id header to all operations
-                        operation.addParametersItem(new Parameter()
-                                        .in("header")
-                                        .name("X-User-Id")
-                                        .required(true)
-                                        .schema(new Schema<>().type("string").format("uuid")));
+        // /**
+        // * Operation customizer to add custom headers to all endpoints
+        // */
+        // @Bean
+        // public OperationCustomizer operationCustomizer() {
+        // return (operation, handlerMethod) -> {
+        // // Add X-User-Id header to all operations
+        // operation.addParametersItem(new Parameter()
+        // .in("header")
+        // .name("X-User-Id")
+        // .required(true)
+        // .schema(new Schema<>().type("string").format("uuid")));
 
-                        // Add X-User-Role header to all operations
-                        operation.addParametersItem(new Parameter()
-                                        .in("header")
-                                        .name("X-User-Role")
-                                        .required(true)
-                                        .schema(new Schema<>().type("string").example("USER")));
+        // // Add X-User-Role header to all operations
+        // operation.addParametersItem(new Parameter()
+        // .in("header")
+        // .name("X-User-Role")
+        // .required(true)
+        // .schema(new Schema<>().type("string").example("USER")));
 
-                        // Add X-User-Email header to all operations (optional)
-                        operation.addParametersItem(new Parameter()
-                                        .in("header")
-                                        .name("X-User-Email")
-                                        .required(false)
-                                        .schema(new Schema<>().type("string").format("email")));
+        // // Add X-User-Email header to all operations (optional)
+        // operation.addParametersItem(new Parameter()
+        // .in("header")
+        // .name("X-User-Email")
+        // .required(false)
+        // .schema(new Schema<>().type("string").format("email")));
 
-                        return operation;
-                };
-        }
+        // return operation;
+        // };
+        // }
 }
