@@ -424,7 +424,7 @@ class WalletServiceTest {
         WalletUpdateDTO dto = new WalletUpdateDTO();
         dto.setWalletName("Test Wallet");
         dto.setUserIdentifier(userId.toString());
-        dto.setAccountNumber("1234567890"); // Same as wallet's account number
+        dto.setAccountNumber("1234567890");
 
         when(securityUtil.getCurrentUserId()).thenReturn(userId);
         when(securityUtil.isAdmin()).thenReturn(true);
